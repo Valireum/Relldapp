@@ -55,7 +55,7 @@ operation add_resource_topubkey (to: pubkey, resourceID: byte_array, amount: int
 
 //resource_exchange
 
-operation create_ex_order(bid: boolean, issuer: pubkey, amount: integer, price: integer, pair: byte_array, nonce: integer/*bug work around*/) {
+operation create_ex_order(bid: boolean, issuer: pubkey, amount: integer, price: integer, pair: text, nonce: integer/*bug work around*/) {
 	if (bid) {
 		f.create_ex_order_buy(issuer, amount, price, pair);
 	} else {
@@ -64,44 +64,45 @@ operation create_ex_order(bid: boolean, issuer: pubkey, amount: integer, price: 
 }
 
 operation cancel_ft_ex_buy_order (id: integer, nonce: integer/*bug work around*/) {
-	val order = m.ft_ex_order@{.id == id};
+	val order = m.ex_order@{.id == id};
 	require(is_signer(order.issuer.pubkey), "Unauthorized transaction");
-	require(order.status != m.status.value(1), "Order already cancelled");
-	require(order.status != m.status.value(2), "Order already filled");
+	//require(order.status != m.status.value(1), "Order already cancelled");
+	//require(order.status != m.status.value(2), "Order already filled");
 	val u = m.user@{.pubkey == order.issuer.pubkey};
-	val token = order.pair.main;
+	val token = order.resource_pairs.main;
 	val amount = (order.amount - order.filled) *order.price;
-	val fees = (order.filled / order.amount) * order.fees;
-	print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
-	update m.ft_ex_order@{.id == id}(.status = m.status.value(1));
+	//val fees = (order.filled / order.amount) * order.fees;
+	//print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
+	//update m.ex_order@{.id == id}(.status = m.status.value(1));
 	//update m.ft_exchange_balance@{.user == u, .ft == token}(.amount -= amount);
-	update m.ft_balance@{.user == u, .ft == token}(.amount += (amount+fees));
+	update m.balance@{.user == u, .resource == token}(.amount += amount);
 }
 
 operation cancel_ft_ex_sell_order (id: integer, nonce: integer/*bug work around*/) {
-	val order = m.ft_ex_order@{.id == id};
+	val order = m.ex_order@{.id == id};
 	require(is_signer(order.issuer.pubkey), "Unauthorized transaction");
-	require(order.status != m.status.value(1), "Order already cancelled");
-	require(order.status != m.status.value(2), "Order already filled");
+	//require(order.status != m.status.value(1), "Order already cancelled");
+	//require(order.status != m.status.value(2), "Order already filled");
 	val u = m.user@{.pubkey == order.issuer.pubkey};
-	val token = order.pair.second;
+	val token = order.resource_pairs.second;
 	val amount = order.amount - order.filled;
-	val fees = (order.filled / order.amount) * order.fees;
-	print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
-	update m.ft_ex_order@{.id == id}(.status = m.status.value(1));
+	//val fees = (order.filled / order.amount) * order.fees;
+	//print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
+	//update m.ft_ex_order@{.id == id}(.status = m.status.value(1));
 	//update m.ft_exchange_balance@{.user == u, .ft == token}(.amount -= amount);
-	update m.ft_balance@{.user == u, .ft == token}(.amount += (amount+fees));
+	update m.balance@{.user == u, .resource == token}(.amount += amount);
 }
 
 operation add_ex_pair (name: text) {
 	val pair = name.split("/");
-	create m.ft_ex_pairs(name = name, main = m.ft@{.name == pair[0]}, second = m.ft@{.name == pair[1]});
+	val idx = (m.resource_pairs@*{}).size();
+	create m.resource_pairs(id = idx, name = name, main = m.resource@{.name == pair[0]}, second = m.resource@{.name == pair[1]});
 }
 
 
 
 //Districts
-
+/* 
 operation new_district (n: text, issuer: pubkey, spots: integer, sell_price: decimal){
 	val u = m.user@?{.pubkey == issuer};
 	require_not_empty(u);
@@ -166,7 +167,7 @@ operation new_world (world_name: name, buyer: pubkey, world_desc: text, gametype
 	create m.portal(newWorld, accessLand);
 }
 
-
+*/
 // Rent system
 // Listing market 
 

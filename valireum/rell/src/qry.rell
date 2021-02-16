@@ -13,7 +13,7 @@ namespace ft3 {
 
 //nft
 
-
+/* 
 query getnfts(): list<(id:byte_array,ipfs:text,name:text,nft_category:m.nft_category,limits:integer,issuer:byte_array,RID:byte_array,icon:text,shortdesc:text,longdesc:text)>{
 	return m.nft @*{}(id = .id, ipfs = .ipfs, name = .name, nft_category = .nft_category, limits = .limits, issuer = .issuer.pubkey, RID = .RID, icon = .nft_desc.icon, shortdesc = .nft_desc.shortdesc, longdesc = .nft_desc.longdesc);
 }
@@ -119,5 +119,5 @@ query get_all_worlds(){
 	return m.world@*{}(name = .name, category = .category);
 }
 
-
+*/
  

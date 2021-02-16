@@ -11,11 +11,11 @@ function f_initBalance(p: pubkey) {
 }
 
 //buy
-function create_ex_order_buy (issuer: pubkey, amount: integer, price: integer, pair: byte_array) {
+function create_ex_order_buy (issuer: pubkey, amount: integer, price: integer, pair: text) {
 	require(is_signer(issuer), "Unauthorized transaction");
 	require( amount*price > 0, "Amount is too low" );
 	
-	val res_pair = m.resource_pairs@{.id == pair};
+	val res_pair = m.resource_pairs@{.name == pair};
 	var order = amount*price;
 	
 	require( res_pair.second.transferable, "Asset not transferable" );
@@ -93,11 +93,11 @@ function create_ex_order_buy (issuer: pubkey, amount: integer, price: integer, p
 
 
 //sell
-function create_ex_order_sell (issuer: pubkey, amount: integer, price: integer, pair: byte_array) {
+function create_ex_order_sell (issuer: pubkey, amount: integer, price: integer, pair: text) {
 	require(is_signer(issuer), "Unauthorized transaction");
 	require( amount*price > 0, "Amount is too low" );
 	
-	val res_pair = m.resource_pairs@{.id == pair};
+	val res_pair = m.resource_pairs@{.name == pair};
 	var order = amount;
 	
 	require( res_pair.second.transferable, "Asset not transferable" );

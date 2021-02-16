@@ -49,7 +49,7 @@ entity resource_sales {
 }
 
 entity resource_pairs {
-	key id: byte_array;
+	key id: integer;
 	key name: text;
 	main: resource;
 	second: resource;
