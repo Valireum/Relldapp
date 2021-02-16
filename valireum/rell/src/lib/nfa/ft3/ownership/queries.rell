@@ -1,0 +1,6 @@
+
+import e: ^^.core.entitee;
+
+query get_owner(e: e.entitee) {
+	return ownership@{e}.account.id;
+}

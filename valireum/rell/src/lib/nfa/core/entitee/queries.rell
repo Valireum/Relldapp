@@ -1,0 +1,7 @@
+
+import n: ^.nfa;
+
+query get_entity(nfa_id: byte_array, entity_id: byte_array) {
+	val e = entitee@{.id == entity_id, .nfa == n.nfa@{.id == nfa_id}};
+	return getEntitee(e);	
+}

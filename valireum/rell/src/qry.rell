@@ -1,0 +1,123 @@
+
+module;
+
+import m: main;
+import c: config;
+
+// chromia explorer queries
+namespace ft3 {
+	query get_blockchain_info() {
+		return (name = c.config.name, website = c.config.website, description = c.config.description);
+	}
+}
+
+//nft
+
+
+query getnfts(): list<(id:byte_array,ipfs:text,name:text,nft_category:m.nft_category,limits:integer,issuer:byte_array,RID:byte_array,icon:text,shortdesc:text,longdesc:text)>{
+	return m.nft @*{}(id = .id, ipfs = .ipfs, name = .name, nft_category = .nft_category, limits = .limits, issuer = .issuer.pubkey, RID = .RID, icon = .nft_desc.icon, shortdesc = .nft_desc.shortdesc, longdesc = .nft_desc.longdesc);
+}
+
+
+//user balance
+query get_ft_Balance(p: pubkey) {
+	val u = m.user @{.pubkey == p};
+	return m.ft_balance@*{u}(token = .ft.name, balance = .amount);
+}
+
+// inst nft
+
+query get_nft_inst_transactions(p: pubkey) {
+	val u = m.user @{.pubkey == p};
+	return m.nft_transactions@*{.from_user == u or .to_user == u}(
+		id = .id,
+	    from = .from_user.pubkey,
+	    to = .to_user.pubkey,
+	    item_id = .nft_inst.id,
+	    item_name = .nft_inst.nft.name,
+	    date = .timestamp,
+	    fees = .fees,
+	    platform = .platform);
+}
+
+query get_nft_inst(p:pubkey) {
+	val u = m.user @{.pubkey == p};
+	return m.nft_inst_owner@*{.user == u}(nft_inst_id = .nft_inst.id);
+}
+
+//ft transactions
+
+query get_out_transactions(p: pubkey): list<(txid:byte_array,to:byte_array,token:text,amount:decimal,date:integer,fees:decimal,platfrom:text)> {
+	val u = m.user @{.pubkey == p};
+	return m.ft_transactions@*{.from_user == u}(txid = .id, to = .to_user.pubkey, token = .ft.name, amount = .amount, date = .timestamp, fees = .fees, platfrom = .platform);
+}
+
+query get_in_transactions(p: pubkey): list<(txid:byte_array,from:byte_array,token:text,amount:decimal,date:integer,fees:decimal,platfrom:text)> {
+	val u = m.user @{.pubkey == p};
+	return m.ft_transactions@*{.to_user == u}(txid = .id, from = .from_user.pubkey, token = .ft.name, amount = .amount, date = .timestamp, fees = .fees, platfrom = .platform);
+}
+
+query get_all_transactions(last_timestamp: integer){
+	return m.ft_transactions@*{.timestamp > last_timestamp}(txid = .id, token = .ft.name, amount = .amount, date = .timestamp, platfrom = .platform);
+}
+
+query get_transaction_by_id(txid: byte_array){
+	return m.ft_transactions@{.id == txid}(txid = .id, from = .from_user.pubkey, to = .to_user.pubkey, token = .ft.name, amount = .amount, date = .timestamp, fees = .fees, platfrom = .platform);
+}
+
+//ft_exchange
+
+query ft_all_active_orders(){
+	return m.ft_ex_order@*{.amount != .filled}(bid = .bid, id = .id, amount = .amount, filled = .filled, price = .price, fees = .fees, pair = .pair.name, time = .timestamp, orderStatus = .status);
+}
+
+query ft_all_buy_orders(){
+	return m.ft_ex_order@*{.bid == true, .amount != .filled}(bid = .bid, id = .id, amount = .amount, filled = .filled, price = .price, fees = .fees, pair = .pair.name, time = .timestamp, orderStatus = .status);
+}
+
+query ft_all_sell_orders(){
+	return m.ft_ex_order@*{.bid == false, .amount != .filled}(bid = .bid, id = .id, amount = .amount, filled = .filled, price = .price, fees = .fees, pair = .pair.name, time = .timestamp, orderStatus = .status);
+}
+
+query ft_get_orders_by_pubkey(p: pubkey) {
+	return m.ft_ex_order@*{.issuer.pubkey == p}(bid = .bid, id = .id, amount = .amount, filled = .filled, price = .price, fees = .fees, pair = .pair.name, time = .timestamp, orderStatus = .status);
+}
+
+query get_ex_pairs(){
+	return m.ft_ex_pairs@*{}(name = .name, volume = .volume);
+}
+
+
+
+
+
+// store
+query get_sales_transactions(){
+	return m.ft_sales@*{}(id = .id, buyer = .buyer.pubkey, token = .ft.name, amount = .amount, payment_method = .payment_method, payment_amount = .payment_amount, txid = .txid, timestamp = .timestamp);
+}
+
+query get_sales_by_user(p: pubkey) {
+	return m.ft_sales@*{.buyer == m.user@{.pubkey == p}}(id = .id, buyer = .buyer.pubkey, token = .ft.name, amount = .amount, payment_method = .payment_method, payment_amount = .payment_amount, txid = .txid, timestamp = .timestamp);
+}
+
+
+//Districts
+
+query get_all_districts(){
+	return m.districts@*{}(id = .id, name = .name);
+}
+
+query get_all_spots_by_district(id: integer){
+	return m.spots@*{.districts.id == id}(uid = .uid, price = .price);
+}
+
+query get_all_lands(){
+	return m.land@*{}(.id, .name);
+}
+
+query get_all_worlds(){
+	return m.world@*{}(name = .name, category = .category);
+}
+
+
+ 

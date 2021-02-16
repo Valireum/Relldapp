@@ -1,0 +1,175 @@
+module;
+import m: main;
+import f: func;
+import c: config;
+
+
+
+
+
+operation createUser(p: pubkey, name) {
+	require(is_signer(p), "Unauthorized transaction");
+	val id = (p, name).hash();
+	create m.user(id = id, name = name, pubkey = p);
+	f.f_initBalance(p);
+}
+
+operation update_user_rank(p: pubkey, new_rank: integer){
+	require(is_signer(c.config.store), "Unauthorized transaction");
+	update m.user@{.pubkey == p}(.rank = new_rank);
+}
+
+// resource_transfer
+
+
+operation resource_transfer(from: pubkey, to: pubkey, resourceID: byte_array, amount: integer, nonce: integer/*bug work around*/) {
+	require(is_signer(from), "Unauthorized transaction");
+	val resource = m.resource@{.id == resourceID};
+	require( resource.transferable, "Asset not transferable" );
+	require( amount > 0, "Amount is too low" );
+	val u_from = m.user@{.pubkey == from};
+	val u_to = m.user@{.pubkey == to};
+	
+	
+	require( m.balance@{.user == u_from, .resource == resource}.amount >= amount, "Balance is too low" );
+	update m.balance@{.user == u_from, .resource == resource}(.amount -= amount);
+	update m.balance@{.user == u_to, .resource == resource}(.amount += amount);
+
+	val timestamp = op_context.last_block_time;
+	val id = (from , to, amount, timestamp, resourceID).hash();
+    create m.resource_transactions (id, resource, sender = u_from, receiver = u_to, amount = amount, timestamp);
+}
+
+
+//Store
+operation add_resource_topubkey (to: pubkey, resourceID: byte_array, amount: integer, payment_method: text, payment_amount: decimal, payment_txid: text) {
+	require(is_signer(c.config.store), "Unauthorized transaction");
+	require( amount > 0, "Amount is too low" );
+	val buyer = m.user@{.pubkey == to};
+	val resource = m.resource@{.id == resourceID};
+	update m.balance@{.user == buyer, .resource == resource}(.amount += amount);
+	val timestamp = op_context.last_block_time;
+	val id = (buyer, amount, timestamp, resource).hash();
+	create m.resource_sales(id, buyer, resource, amount, payment_method, payment_amount, payment_txid, timestamp);
+}
+
+//resource_exchange
+
+operation create_ex_order(bid: boolean, issuer: pubkey, amount: integer, price: integer, pair: byte_array, nonce: integer/*bug work around*/) {
+	if (bid) {
+		f.create_ex_order_buy(issuer, amount, price, pair);
+	} else {
+		f.create_ex_order_sell(issuer, amount, price, pair);
+	}
+}
+
+operation cancel_ft_ex_buy_order (id: integer, nonce: integer/*bug work around*/) {
+	val order = m.ft_ex_order@{.id == id};
+	require(is_signer(order.issuer.pubkey), "Unauthorized transaction");
+	require(order.status != m.status.value(1), "Order already cancelled");
+	require(order.status != m.status.value(2), "Order already filled");
+	val u = m.user@{.pubkey == order.issuer.pubkey};
+	val token = order.pair.main;
+	val amount = (order.amount - order.filled) *order.price;
+	val fees = (order.filled / order.amount) * order.fees;
+	print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
+	update m.ft_ex_order@{.id == id}(.status = m.status.value(1));
+	//update m.ft_exchange_balance@{.user == u, .ft == token}(.amount -= amount);
+	update m.ft_balance@{.user == u, .ft == token}(.amount += (amount+fees));
+}
+
+operation cancel_ft_ex_sell_order (id: integer, nonce: integer/*bug work around*/) {
+	val order = m.ft_ex_order@{.id == id};
+	require(is_signer(order.issuer.pubkey), "Unauthorized transaction");
+	require(order.status != m.status.value(1), "Order already cancelled");
+	require(order.status != m.status.value(2), "Order already filled");
+	val u = m.user@{.pubkey == order.issuer.pubkey};
+	val token = order.pair.second;
+	val amount = order.amount - order.filled;
+	val fees = (order.filled / order.amount) * order.fees;
+	print ("fees = " + fees + " ,filled = " + order.filled + ", amount = " + order.amount);
+	update m.ft_ex_order@{.id == id}(.status = m.status.value(1));
+	//update m.ft_exchange_balance@{.user == u, .ft == token}(.amount -= amount);
+	update m.ft_balance@{.user == u, .ft == token}(.amount += (amount+fees));
+}
+
+operation add_ex_pair (name: text) {
+	val pair = name.split("/");
+	create m.ft_ex_pairs(name = name, main = m.ft@{.name == pair[0]}, second = m.ft@{.name == pair[1]});
+}
+
+
+
+//Districts
+
+operation new_district (n: text, issuer: pubkey, spots: integer, sell_price: decimal){
+	val u = m.user@?{.pubkey == issuer};
+	require_not_empty(u);
+	require(is_signer(issuer), "Unauthorized transaction");
+	require((spots > 9 and spots < 100), "Please chose a number between 10 and 99");
+	require((n.size() > 7 and n.size() < 33), "District name must be 8 to 32 character long");
+	require(m.districts@?{.name == n} == null, "The Districts name already exist!");
+	val districtID = (m.districts@*{}).size();
+	val newDistricts = create m.districts(id = districtID, name = n);
+	create m.districts_owner(u, newDistricts);
+	for (x in range(spots)) {
+		create m.spots(x+1, newDistricts, sell_price);
+	}
+	
+}
+
+// Lands
+
+operation newLand (land_name: name, area: text, land_location: integer, buyer: pubkey){
+	val u = m.user@?{.pubkey == buyer};
+	require_not_empty(u);
+	require(is_signer(buyer), "Unauthorized transaction");
+	require(m.land@?{.name ==land_name} == null, "Land name already exist");
+	val district = m.districts@?{area};
+	require_not_empty(district);
+	val selectedlocation = m.spots@?{.uid ==land_location, .districts == district};
+	require_not_empty(selectedlocation);
+	require( m.spots_owner@?{.spots == selectedlocation} == null, "This location is already taken");
+	val landid = (selectedlocation.uid, district.name).hash();
+	val district_owner = m.districts_owner@{district}.user;
+	if (u != district_owner) {
+		require( m.ft_balance@{.user.pubkey == buyer, .ft.name == "USD"}.amount >= selectedlocation.price, "Balance is too low" );
+		update m.ft_balance@{.user.pubkey == buyer, .ft.name == "USD"}(.amount -= selectedlocation.price);
+		update m.ft_balance@{district_owner, .ft.name == "USD"}(.amount += selectedlocation.price);
+	}
+	val newLand = create m.land(landid, land_name);
+	create m.spots_owner(selectedlocation, newLand);
+	create m.land_owner(u, newLand);
+}
+
+
+// Worlds
+
+operation new_world (world_name: name, buyer: pubkey, world_desc: text, gametype: integer, worldcategory: integer, landid: byte_array) {
+	val u = m.user@?{.pubkey == buyer};
+	require_not_empty(u);
+	require(is_signer(buyer), "Unauthorized transaction");
+	require(m.land_owner@{u}.land.id == landid, "Unauthorized transaction");
+	val accessLand = m.land@{.id == landid};
+	var price = 69;
+	if (worldcategory > 0) {
+		price = 139;
+	}
+	
+	require( m.ft_balance@{.user.pubkey == buyer, .ft.name == "USD"}.amount >= price, "Balance is too low" );
+	update m.ft_balance@{.user.pubkey == buyer, .ft.name == "USD"}(.amount -= price);
+	val world_uid = (m.world@*{}).size();
+	val params = create m.world_params(max_player = 10, game_type = m.game_type.value(gametype), status=  true, min_rank = 1);
+	val worldid = (world_name, landid, world_uid).hash();
+	val newWorld = create m.world(id =worldid, uid = world_uid,  name = world_name, desc = world_desc, category = m.world_category.value(worldcategory), params = params);
+	create m.world_owner(u, newWorld);
+	create m.portal(newWorld, accessLand);
+}
+
+
+// Rent system
+// Listing market 
+
+
+
+

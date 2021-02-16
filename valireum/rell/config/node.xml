@@ -1,0 +1,15 @@
+<run wipe-db="true">
+    <nodes>
+        <config src="./node-config.properties" add-signers="true" />
+    </nodes>
+    <chains>
+        <chain name="Valireum" iid="0">
+            <config height="0">
+				<app module="main">
+                	
+                </app>
+            </config>
+        </chain>
+    </chains>
+</run>
+                              

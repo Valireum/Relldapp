@@ -1,0 +1,94 @@
+
+//main
+module;
+import op;
+import qry;
+
+
+entity user {
+	key id: byte_array;
+	key name;
+	pubkey;
+	mutable rank: integer = 1;
+	mutable title: text = "Newbie";
+	mutable lvl: integer = 1;
+}
+
+entity resource {
+	key id: byte_array;
+	key name;
+	max_q: integer;
+	transferable: boolean;
+}
+
+
+entity balance {
+	key user, resource;
+	mutable amount: integer;
+}
+
+entity resource_transactions {
+	key id: byte_array;
+	resource;
+	sender: user;
+	receiver: user;
+	amount: integer;
+	timestamp;
+	
+}
+
+entity resource_sales {
+	key id: byte_array;
+	buyer: user;
+	resource;
+	amount: integer;
+	payment_method: text;
+	payment_amount: decimal;
+	payment_txid: text;
+	timestamp;
+}
+
+entity resource_pairs {
+	key id: byte_array;
+	key name: text;
+	main: resource;
+	second: resource;
+}
+
+entity ex_order {
+	key id: integer;
+	resource_pairs;
+	bid: boolean;
+	issuer: user;
+	amount: integer;
+	price: integer;
+	mutable filled: integer;
+	timestamp;
+}
+
+entity miners {
+	key id: byte_array;
+	key name;
+	mutable cicle: integer = 24;
+	mutable lvl: integer = 1;
+	mutable capacity: integer = 60;
+	resource;
+}
+
+
+entity abilities {
+	key id: byte_array;
+	key name;
+	jump: integer;
+	climb: integer;
+	fire: integer;
+	ice: integer;
+	shadow: integer;
+}
+
+entity items {
+	key id:byte_array;
+	key name;
+	abilities;
+}
+

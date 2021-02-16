@@ -1,0 +1,171 @@
+module;
+import m: main;
+
+
+function f_initBalance(p: pubkey) {
+	val u = m.user@{.pubkey == p};
+	for (c in m.resource @*{}) {
+		
+        create m.balance(u, c, amount = 0);
+    }
+}
+
+//buy
+function create_ex_order_buy (issuer: pubkey, amount: integer, price: integer, pair: byte_array) {
+	require(is_signer(issuer), "Unauthorized transaction");
+	require( amount*price > 0, "Amount is too low" );
+	
+	val res_pair = m.resource_pairs@{.id == pair};
+	var order = amount*price;
+	
+	require( res_pair.second.transferable, "Asset not transferable" );
+	val u_issuer = m.user@{.pubkey == issuer};
+	//val fee_collector = m.user@{.pubkey == c.config.fee_collector};
+	//var pairDiscount = c.config.pairDiscount;
+	
+	//val fees = (c.config.exfees*pairDiscount) / u_issuer.rank;
+	
+	//val total = order + (order*fees);
+	require( m.balance@{.user == u_issuer, .resource == res_pair.main}.amount >= order, "Balance is too low" );
+	//print ("order fees: " + order +"fees: "+ order*fees + "total: " + total);
+	val timestamp = op_context.last_block_time;
+	val id = m.ex_order@*{}(.id).size();
+	update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount -= order);
+	//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount += order);
+	//update m.ft_balance@{.user == fee_collector, .ft == ft}(.amount += (order*fees));
+	
+	create m.ex_order(id, issuer = u_issuer, bid = true, amount, filled = 0, price, res_pair, timestamp);
+		
+	val available_orders_sort = m.ex_order@*{.bid == false, .price <= price, .filled < .amount}(@sort .price, .filled, .amount, .id);
+	print("found " + available_orders_sort.size());
+	var orderids = list<m.ex_order>();
+	
+	
+	var amount_to_fill = 0;
+	for (i in available_orders_sort) {
+			val available = i.amount - i.filled;
+			orderids.add(m.ex_order@{.id == i.id});
+			amount_to_fill += (available); 
+		
+		if (amount_to_fill >= amount) {break;}
+	}
+	
+	for (i in orderids) {
+		print("orders we will use");
+		print(i.price + " " + (i.amount-i.filled));
+	}
+	
+	
+	//
+	if (not orderids.empty()) {
+		var filled = 0;
+		
+			for (o in orderids) {
+					var available_amount = o.amount - o.filled;
+					var amount_can_buy = amount - filled;
+					if (available_amount >= amount_can_buy) {
+						available_amount = amount_can_buy;
+					}
+					//update m.ft_exchange_balance@{.user == o.issuer, .ft == ft_pair.second}(.amount -= available_amount);
+					update m.balance@{.user == u_issuer, .resource == res_pair.second}(.amount += available_amount);
+					update m.balance@{.user == o.issuer, .resource == res_pair.main}(.amount += available_amount*o.price);
+					//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount -= available_amount*o.price);
+					filled += available_amount;
+					//update m.ft_ex_pairs@{.name == ft_pair.name}(.volume += filled*o.price);
+					update m.ex_order@{.id == id}(.filled += available_amount);
+					update m.ex_order@{.id == o.id}(.filled += available_amount);
+					if (price > o.price) {
+						val change = (price - o.price) * available_amount;
+						update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount += change);
+					}
+					
+					if (filled  == amount) {break;}
+						
+				
+			}
+			
+			
+		
+	}
+	
+}
+
+
+
+//sell
+function create_ex_order_sell (issuer: pubkey, amount: integer, price: integer, pair: byte_array) {
+	require(is_signer(issuer), "Unauthorized transaction");
+	require( amount*price > 0, "Amount is too low" );
+	
+	val res_pair = m.resource_pairs@{.id == pair};
+	var order = amount;
+	
+	require( res_pair.second.transferable, "Asset not transferable" );
+	val u_issuer = m.user@{.pubkey == issuer};
+	//val fee_collector = m.user@{.pubkey == c.config.fee_collector};
+	//var pairDiscount = c.config.pairDiscount;
+	
+	//val fees = (c.config.exfees*pairDiscount) / u_issuer.rank;
+	
+	//val total = order + (order*fees);
+	require( m.balance@{.user == u_issuer, .resource == res_pair.second}.amount >= order, "Balance is too low" );
+	//print ("order fees: " + order +"fees: "+ order*fees + "total: " + total);
+	val timestamp = op_context.last_block_time;
+	val id = m.ex_order@*{}(.id).size();
+	update m.balance@{.user == u_issuer, .resource == res_pair.second}(.amount -= order);
+	//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount += order);
+	//update m.ft_balance@{.user == fee_collector, .ft == ft}(.amount += (order*fees));
+	
+	create m.ex_order(id, issuer = u_issuer, bid = false, amount, filled = 0, price, res_pair, timestamp);
+		
+	val available_orders_sort = m.ex_order@*{.bid == true, .price >= price, .filled < .amount}(@sort .price, .filled, .amount, .id);
+	print("found " + available_orders_sort.size());
+	var orderids = list<m.ex_order>();
+	
+	
+	var amount_to_fill = 0;
+	for (i in available_orders_sort) {
+			val available = i.amount - i.filled;
+			orderids.add(m.ex_order@{.id == i.id});
+			amount_to_fill += (available); 
+		
+		if (amount_to_fill >= amount) {break;}
+	}
+	
+	for (i in orderids) {
+		print("orders we will use");
+		print(i.price + " " + (i.amount-i.filled));
+	}
+	
+	
+	//
+	if (not orderids.empty()) {
+		var filled = 0;
+		
+			for (o in orderids) {
+					var available_amount = o.amount - o.filled;
+					var amount_can_buy = amount - filled;
+					if (available_amount >= amount_can_buy) {
+						available_amount = amount_can_buy;
+					}
+					//update m.ft_exchange_balance@{.user == o.issuer, .ft == ft_pair.second}(.amount -= available_amount);
+					update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount += available_amount*o.price);
+					update m.balance@{.user == o.issuer, .resource == res_pair.second}(.amount += available_amount);
+					//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount -= available_amount*o.price);
+					filled += available_amount;
+					//update m.ft_ex_pairs@{.name == ft_pair.name}(.volume += filled*o.price);
+					
+					update m.ex_order@{.id == id}(.filled += available_amount);
+					update m.ex_order@{.id == o.id}(.filled += available_amount);
+					
+					if (filled  == amount) {break;}
+						
+				
+			}
+			
+			
+		
+	}
+	
+}
+
