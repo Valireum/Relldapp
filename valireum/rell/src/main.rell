@@ -5,21 +5,16 @@ import op;
 import qry;
 
 
-enum tx_type {
-	sent,
-	received
-}
-
-
-enum order_type {
-	buy,
-	sell
-}
-
 enum listing_state {
 	market,
 	sold,
 	canceled
+}
+
+enum sale_offer {
+	bid,
+	instant,
+	both
 }
 
 // simple user for testing-- replace with your own user entity
@@ -30,27 +25,6 @@ entity user {
 		
 }
 
-// we don't need that here.
-//entity user_stats {
-//	key user;
-//	mutable level: integer = 1;
-//	mutable title: text = "Newbie";
-//	mutable exp_points:integer = 1;
-//	mutable skill_points:integer = 1;
-//}
-//
-//
-//
-//entity news {
-//	key id: integer;
-//	title: text;
-//	info: text;
-//	source:name;
-//	posturl:text;
-//	imgurl:text;
-//	category:name;	
-//	date:text;
-//}
 
 // example of token used as payment-- replace with your own
 entity token {
@@ -70,12 +44,14 @@ entity item {
 	key id:byte_array;
 	max_inst:integer;
 	uri: text;
+	created: timestamp;
 }
 
 // example of item instance -- replace with your own
 entity item_inst {
 	key item, id:integer;
 	minter:user;
+	mintedat: timestamp;
 }
 
 // simple inventory of inst items.
@@ -84,29 +60,16 @@ entity inventory {
 }
 
 
-
-
-
-//entity server {
-//	key id:integer;
-//	key host:text;
-//	key name;
-//	port:integer;
-//	mode:name;
-//	owner:pubkey;
-//}
-
-//entity server_items {
-//	key server, item_inst;
-//}
-
 // Item Listing
 entity item_listing {
 	key id:byte_array;
 	key item_inst;
 	price:decimal;
 	seller:user;
-	
+	mutable listing_state = listing_state.value(0);
+	created: timestamp;
+	expire: timestamp;
+	sale_offer;
 }
 
 // Marketplace transactions history
@@ -119,33 +82,8 @@ entity market_history {
 	date:timestamp;
 }
 
-//entity nft {
-//	key id: byte_array;
-//	key name;
-//	desc:text;
-//	icon: text;
-//	created: timestamp;
-//	max: integer;
-//}
 
-//entity nft_obj {
-//	key id: byte_array;
-//	nft;
-//	mutable level:integer = 1;
-//}
-
-//entity nft_ownership {
-//	key user, nft_obj;
-//}
-
-//entity nft_transactions {
-//	key id: byte_array;
-//	sender: user;
-//	receiver: user;
-//	nft_obj;
-//	date: timestamp;
-//}
-
+// bids created by users
 entity market_bids {
 	key id: integer;
 	bidder: user;
@@ -154,19 +92,6 @@ entity market_bids {
 	item: item_listing;
 }
 
-//entity nft_obj_listing {
-//	key id: integer;
-//	key item:nft_obj;
-//	price: decimal;
-//	expire: timestamp;
-//	promoted: boolean;
-//	mutable listing_state = listing_state.value(0);
-//}
-
-
-
-
-
 
 entity token_transactions {
 	key id: byte_array;
@@ -174,54 +99,10 @@ entity token_transactions {
 	sender: user;
 	receiver: user;
 	amount: decimal;
-	timestamp;
+	date: timestamp;
 	
 }
 
-//entity token_sales {
-//	key id: byte_array;
-//	buyer: user;
-//	token;
-//	amount: decimal;
-//	payment_method: text;
-//	payment_amount: decimal;
-//	payment_txid: text;
-//	timestamp;
-//}
-
-//entity token_pairs {
-//	key id: integer;
-//	key name: text;
-//	main: token;
-//	second: token;
-//	state:boolean = true;
-//}
-//
-//entity ex_order {
-//	key id: integer;
-//	order_type;
-//	token_pairs;
-//	maker: user;
-//	amount: decimal;
-//	price: decimal;
-//	timestamp;
-//}
-//
-//entity ex_live {
-//	id: integer;
-//	ex_order;
-//	mutable filled: decimal;
-//	mutable canceled:boolean = false;
-//}
-//
-//entity ex_live_transactions {
-//	key id: integer;
-//	buy_order: ex_live;
-//	sell_order: ex_live;
-//	token_pairs;
-//	amount:decimal;
-//	date: timestamp;
-//}
 
 
 
