@@ -2,7 +2,7 @@ module;
 import m: main;
 
 
-
+// new tokens airdrop for all users
 function f_airdrop(t_amount: decimal, symbol: text){
 	
 		val c = m.token@{.symbol == symbol};
@@ -13,12 +13,14 @@ function f_airdrop(t_amount: decimal, symbol: text){
 	
 }
 
+// init user balance, we used in user creation
 function f_create_user_balance(u: m.user) {
 	for (c in m.token@*{}) {
-		create m.balance(u, c, .amount = 150.0);
+		create m.balance(u, c, .amount = 0.0);
 	}
 }
 
+// update user balance 
 function f_update_balance(user: pubkey, token:text, t_amount:decimal, inout:boolean) {
 	require( t_amount > 0, "Amount is too low" );
 	if (inout) {
@@ -29,24 +31,8 @@ function f_update_balance(user: pubkey, token:text, t_amount:decimal, inout:bool
 	}
 }
 
-//function f_handle_exp(exp:integer, n:name){
-//	val cuser = m.user_stats@{.user.name == n};
-//	cuser.exp_points += exp;
-//	val target = cuser.level * 500;
-//	if (cuser.exp_points > target){
-//		cuser.level += 1;
-//		cuser.exp_points = cuser.exp_points % 500;
-//		if (cuser.exp_points > cuser.level * 500){
-//			f_handle_exp(cuser.exp_points, n);
-//		}
-//	}
-//	update m.user_stats@{.user.name == n}(.level = cuser.level, .exp_points = cuser.exp_points);
-//	update m.user_stats@{.user.name == n}(.skill_points = abs(cuser.level / 5));
-//	
-//}
 
-
-//start Random 
+// random idea provided by @bloody bit
 
 object random_pool { mutable state: byte_array = chain_context.blockchain_rid; }
 
@@ -99,58 +85,5 @@ function shuffle(array: list<integer>) {
 }
 
 //end Random
-
-
-//function f_fill_order(buy:m.ex_live, sell:m.ex_live, date:timestamp) {
-//	val orderpair = buy.ex_order.token_pairs;
-//	val sell_amount = sell.ex_order.amount - sell.filled;
-//	val buy_amount = buy.ex_order.amount - buy.filled;
-//	
-//	var amount_to_fill = 0.0;
-//
-//	if (sell_amount >= buy_amount) {
-//		amount_to_fill = buy_amount;
-//	}
-//	else {
-//		amount_to_fill = sell_amount;
-//	}
-//	
-//	update m.ex_live@{.id == buy.id}(.filled += amount_to_fill);
-//	update m.ex_live@{.id == sell.id}(.filled += amount_to_fill);
-//	
-//	update m.balance@{.user == buy.ex_order.maker, .token == orderpair.second }(.amount =+ amount_to_fill);
-//	update m.balance@{.user == sell.ex_order.maker, .token == orderpair.main }(.amount =+ (amount_to_fill*sell.ex_order.price));
-//	
-//	val Id = (m.ex_live_transactions@*{}).size();
-//	create m.ex_live_transactions(id = Id, buy_order = buy, sell_order = sell, token_pairs = orderpair, amount = amount_to_fill, date);
-//	
-//}
-
-//order matcher
-
-//function f_match_orders(order:m.ex_order, date:timestamp) {
-//	val Id = (m.ex_live@*{}).size();
-//	
-//	var newliveorder = create m.ex_live(Id, order, 0.0);
-//	if (order.order_type == m.order_type.value(0)) {
-//		val orderlists = m.ex_live@*{.canceled == false, .ex_order.token_pairs == newliveorder.ex_order.token_pairs, .ex_order.order_type.value == 1, .filled < .ex_order.amount and .ex_order.price <= order.price}(.id, @sort .ex_order.price);
-//		for (liveorder in orderlists) {
-//			val sell_order = m.ex_live@{.id == liveorder.id};
-//			f_fill_order(newliveorder, sell_order, date);
-//			if(newliveorder.filled == newliveorder.ex_order.amount){break;}
-//			
-//		}
-//	}else {
-//		val orderlists = m.ex_live@*{.canceled == false, .ex_order.token_pairs == newliveorder.ex_order.token_pairs, .ex_order.order_type.value == 0, .filled < .ex_order.amount and .ex_order.price >= order.price}(.id, @sort_desc .ex_order.price);
-//		for (liveorder in orderlists) {
-//			val buy_order = m.ex_live@{.id == liveorder.id};
-//			f_fill_order(buy_order, newliveorder, date);
-//			if(newliveorder.filled == newliveorder.ex_order.amount){break;}
-//			
-//		}
-//	}
-//	
-//	
-//}
 
 
