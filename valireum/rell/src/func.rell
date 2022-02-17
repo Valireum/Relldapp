@@ -2,170 +2,155 @@ module;
 import m: main;
 
 
-function f_initBalance(p: pubkey) {
-	val u = m.user@{.pubkey == p};
-	for (c in m.resource @*{}) {
-		
-        create m.balance(u, c, amount = 0);
+
+function f_airdrop(t_amount: decimal, symbol: text){
+	
+		val c = m.token@{.symbol == symbol};
+		for (u in m.user@*{}) {
+			create m.balance(u, c, .amount = t_amount);
+	
+	}
+	
+}
+
+function f_create_user_balance(u: m.user) {
+	for (c in m.token@*{}) {
+		create m.balance(u, c, .amount = 150.0);
+	}
+}
+
+function f_update_balance(user: pubkey, token:text, t_amount:decimal, inout:boolean) {
+	require( t_amount > 0, "Amount is too low" );
+	if (inout) {
+		update m.balance@{.user.pubkey == user, .token.symbol == token}(.amount += t_amount);
+	} else {
+		require( m.balance@{.user.pubkey == user, .token.symbol == token}.amount >= t_amount, "balance is too low" );
+		update m.balance@{.user.pubkey == user, .token.symbol == token}(.amount -= t_amount);
+	}
+}
+
+function f_handle_exp(exp:integer, n:name){
+	val cuser = m.user_stats@{.user.name == n};
+	cuser.exp_points += exp;
+	val target = cuser.level * 500;
+	if (cuser.exp_points > target){
+		cuser.level += 1;
+		cuser.exp_points = cuser.exp_points % 500;
+		if (cuser.exp_points > cuser.level * 500){
+			f_handle_exp(cuser.exp_points, n);
+		}
+	}
+	update m.user_stats@{.user.name == n}(.level = cuser.level, .exp_points = cuser.exp_points);
+	update m.user_stats@{.user.name == n}(.skill_points = abs(cuser.level / 5));
+	
+}
+
+
+//start Random 
+
+object random_pool { mutable state: byte_array = chain_context.blockchain_rid; }
+
+object random_obj {
+ mutable last_rand :decimal = 0.0;
+ mutable rand_num : decimal = 0.0;
+}
+
+function get_next_random_byte() : byte_array {
+ val new_state = (random_pool.state, 
+                  op_context.transaction.tx_hash, // current transaction
+                     block @ { .block_height == op_context.block_height - 1} .block_rid // last block rid
+                     ).hash(); // mix all data together
+    random_pool.state = new_state;
+    return new_state;
+}
+
+function get_next_random_decimal(): decimal {
+    val hex = get_next_random_byte().to_hex();
+    // pick the last 8 digits (4 bytes)
+    val octet = hex.sub(hex.size()-8);
+    val seed = integer.from_hex(octet);
+    while (random_obj.last_rand == random_obj.rand_num) {
+     random_obj.rand_num = (seed * 
+           3.141592653589793 // PI number
+             ) % 1;
     }
+    random_obj.last_rand = random_obj.rand_num;
+    return random_obj.last_rand;
+   
 }
 
-//buy
-function create_ex_order_buy (issuer: pubkey, amount: integer, price: integer, pair: text) {
-	require(is_signer(issuer), "Unauthorized transaction");
-	require( amount*price > 0, "Amount is too low" );
+function random_int(low : integer, high: integer) : integer {
+ return integer((get_next_random_decimal() * (high - low + 1) + low));
+}
+
+// shuffle-algorithm
+function shuffle(array: list<integer>) {
+ var i = array.size() - 1;
+ while (i > 0) {
+  val j = random_int(0, i);
+  
+  // swap
+  val temp = array[i];
+  array[i] = array[j];
+  array[j] = temp;
+  
+  i--;
+ }
+}
+
+//end Random
+
+
+function f_fill_order(buy:m.ex_live, sell:m.ex_live, date:timestamp) {
+	val orderpair = buy.ex_order.token_pairs;
+	val sell_amount = sell.ex_order.amount - sell.filled;
+	val buy_amount = buy.ex_order.amount - buy.filled;
 	
-	val res_pair = m.resource_pairs@{.name == pair};
-	var order = amount*price;
-	
-	require( res_pair.second.transferable, "Asset not transferable" );
-	val u_issuer = m.user@{.pubkey == issuer};
-	//val fee_collector = m.user@{.pubkey == c.config.fee_collector};
-	//var pairDiscount = c.config.pairDiscount;
-	
-	//val fees = (c.config.exfees*pairDiscount) / u_issuer.rank;
-	
-	//val total = order + (order*fees);
-	require( m.balance@{.user == u_issuer, .resource == res_pair.main}.amount >= order, "Balance is too low" );
-	//print ("order fees: " + order +"fees: "+ order*fees + "total: " + total);
-	val timestamp = op_context.last_block_time;
-	val id = m.ex_order@*{}(.id).size();
-	update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount -= order);
-	//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount += order);
-	//update m.ft_balance@{.user == fee_collector, .ft == ft}(.amount += (order*fees));
-	
-	create m.ex_order(id, issuer = u_issuer, bid = true, amount, filled = 0, price, res_pair, timestamp);
-		
-	val available_orders_sort = m.ex_order@*{.bid == false, .price <= price, .filled < .amount}(@sort .price, .filled, .amount, .id);
-	print("found " + available_orders_sort.size());
-	var orderids = list<m.ex_order>();
-	
-	
-	var amount_to_fill = 0;
-	for (i in available_orders_sort) {
-			val available = i.amount - i.filled;
-			orderids.add(m.ex_order@{.id == i.id});
-			amount_to_fill += (available); 
-		
-		if (amount_to_fill >= amount) {break;}
+	var amount_to_fill = 0.0;
+
+	if (sell_amount >= buy_amount) {
+		amount_to_fill = buy_amount;
+	}
+	else {
+		amount_to_fill = sell_amount;
 	}
 	
-	for (i in orderids) {
-		print("orders we will use");
-		print(i.price + " " + (i.amount-i.filled));
-	}
+	update m.ex_live@{.id == buy.id}(.filled += amount_to_fill);
+	update m.ex_live@{.id == sell.id}(.filled += amount_to_fill);
 	
+	update m.balance@{.user == buy.ex_order.maker, .token == orderpair.second }(.amount =+ amount_to_fill);
+	update m.balance@{.user == sell.ex_order.maker, .token == orderpair.main }(.amount =+ (amount_to_fill*sell.ex_order.price));
 	
-	//
-	if (not orderids.empty()) {
-		var filled = 0;
-		
-			for (o in orderids) {
-					var available_amount = o.amount - o.filled;
-					var amount_can_buy = amount - filled;
-					if (available_amount >= amount_can_buy) {
-						available_amount = amount_can_buy;
-					}
-					//update m.ft_exchange_balance@{.user == o.issuer, .ft == ft_pair.second}(.amount -= available_amount);
-					update m.balance@{.user == u_issuer, .resource == res_pair.second}(.amount += available_amount);
-					update m.balance@{.user == o.issuer, .resource == res_pair.main}(.amount += available_amount*o.price);
-					//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount -= available_amount*o.price);
-					filled += available_amount;
-					//update m.ft_ex_pairs@{.name == ft_pair.name}(.volume += filled*o.price);
-					update m.ex_order@{.id == id}(.filled += available_amount);
-					update m.ex_order@{.id == o.id}(.filled += available_amount);
-					if (price > o.price) {
-						val change = (price - o.price) * available_amount;
-						update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount += change);
-					}
-					
-					if (filled  == amount) {break;}
-						
-				
-			}
-			
-			
-		
-	}
+	val Id = (m.ex_live_transactions@*{}).size();
+	create m.ex_live_transactions(id = Id, buy_order = buy, sell_order = sell, token_pairs = orderpair, amount = amount_to_fill, date);
 	
 }
 
+//order matcher
 
-
-//sell
-function create_ex_order_sell (issuer: pubkey, amount: integer, price: integer, pair: text) {
-	require(is_signer(issuer), "Unauthorized transaction");
-	require( amount*price > 0, "Amount is too low" );
+function f_match_orders(order:m.ex_order, date:timestamp) {
+	val Id = (m.ex_live@*{}).size();
 	
-	val res_pair = m.resource_pairs@{.name == pair};
-	var order = amount;
-	
-	require( res_pair.second.transferable, "Asset not transferable" );
-	val u_issuer = m.user@{.pubkey == issuer};
-	//val fee_collector = m.user@{.pubkey == c.config.fee_collector};
-	//var pairDiscount = c.config.pairDiscount;
-	
-	//val fees = (c.config.exfees*pairDiscount) / u_issuer.rank;
-	
-	//val total = order + (order*fees);
-	require( m.balance@{.user == u_issuer, .resource == res_pair.second}.amount >= order, "Balance is too low" );
-	//print ("order fees: " + order +"fees: "+ order*fees + "total: " + total);
-	val timestamp = op_context.last_block_time;
-	val id = m.ex_order@*{}(.id).size();
-	update m.balance@{.user == u_issuer, .resource == res_pair.second}(.amount -= order);
-	//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount += order);
-	//update m.ft_balance@{.user == fee_collector, .ft == ft}(.amount += (order*fees));
-	
-	create m.ex_order(id, issuer = u_issuer, bid = false, amount, filled = 0, price, res_pair, timestamp);
-		
-	val available_orders_sort = m.ex_order@*{.bid == true, .price >= price, .filled < .amount}(@sort .price, .filled, .amount, .id);
-	print("found " + available_orders_sort.size());
-	var orderids = list<m.ex_order>();
-	
-	
-	var amount_to_fill = 0;
-	for (i in available_orders_sort) {
-			val available = i.amount - i.filled;
-			orderids.add(m.ex_order@{.id == i.id});
-			amount_to_fill += (available); 
-		
-		if (amount_to_fill >= amount) {break;}
-	}
-	
-	for (i in orderids) {
-		print("orders we will use");
-		print(i.price + " " + (i.amount-i.filled));
-	}
-	
-	
-	//
-	if (not orderids.empty()) {
-		var filled = 0;
-		
-			for (o in orderids) {
-					var available_amount = o.amount - o.filled;
-					var amount_can_buy = amount - filled;
-					if (available_amount >= amount_can_buy) {
-						available_amount = amount_can_buy;
-					}
-					//update m.ft_exchange_balance@{.user == o.issuer, .ft == ft_pair.second}(.amount -= available_amount);
-					update m.balance@{.user == u_issuer, .resource == res_pair.main}(.amount += available_amount*o.price);
-					update m.balance@{.user == o.issuer, .resource == res_pair.second}(.amount += available_amount);
-					//update m.ft_exchange_balance@{.user == u_issuer, .ft == ft}(.amount -= available_amount*o.price);
-					filled += available_amount;
-					//update m.ft_ex_pairs@{.name == ft_pair.name}(.volume += filled*o.price);
-					
-					update m.ex_order@{.id == id}(.filled += available_amount);
-					update m.ex_order@{.id == o.id}(.filled += available_amount);
-					
-					if (filled  == amount) {break;}
-						
-				
-			}
+	var newliveorder = create m.ex_live(Id, order, 0.0);
+	if (order.order_type == m.order_type.value(0)) {
+		val orderlists = m.ex_live@*{.canceled == false, .ex_order.token_pairs == newliveorder.ex_order.token_pairs, .ex_order.order_type.value == 1, .filled < .ex_order.amount and .ex_order.price <= order.price}(.id, @sort .ex_order.price);
+		for (liveorder in orderlists) {
+			val sell_order = m.ex_live@{.id == liveorder.id};
+			f_fill_order(newliveorder, sell_order, date);
+			if(newliveorder.filled == newliveorder.ex_order.amount){break;}
 			
+		}
+	}else {
+		val orderlists = m.ex_live@*{.canceled == false, .ex_order.token_pairs == newliveorder.ex_order.token_pairs, .ex_order.order_type.value == 0, .filled < .ex_order.amount and .ex_order.price >= order.price}(.id, @sort_desc .ex_order.price);
+		for (liveorder in orderlists) {
+			val buy_order = m.ex_live@{.id == liveorder.id};
+			f_fill_order(buy_order, newliveorder, date);
+			if(newliveorder.filled == newliveorder.ex_order.amount){break;}
 			
-		
+		}
 	}
+	
 	
 }
+
 

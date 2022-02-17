@@ -3,7 +3,7 @@ module;
 object config {
     name: text = "Valireum";
     website: text = "https://www.valireum.net";
-    description: text = "Game creation system built on Chromia";
+    description: text = "Battle royal powered by the blockchain";
     store: byte_array = x"0323ea1f6106c8981953734895bed21751bb7e48e2f98f2934305404b3c58ee6f4";
     txfees: decimal = 0.001; // 0.1%
     exfees: decimal = 0.0001; //0.01%

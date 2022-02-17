@@ -4,91 +4,249 @@ module;
 import op;
 import qry;
 
+enum tx_type {
+	sent,
+	received
+}
+
+enum socket {
+	top,
+	bot,
+	feet,
+	mainwp,
+	secondwp
+}
+
+
+enum gender {
+	male,
+	female
+}
+
+enum gen {
+	V1,
+	V2
+}
+
+
+enum order_type {
+	buy,
+	sell
+}
+
+enum listing_state {
+	market,
+	sold
+}
 
 entity user {
 	key id: byte_array;
 	key name;
-	pubkey;
-	mutable rank: integer = 1;
-	mutable title: text = "Newbie";
-	mutable lvl: integer = 1;
+	key pubkey;
+		
 }
 
-entity resource {
+entity user_stats {
+	key user;
+	mutable level: integer = 1;
+	mutable title: text = "Newbie";
+	mutable exp_points:integer = 1;
+	mutable skill_points:integer = 1;
+}
+
+
+
+entity news {
+	key id: integer;
+	title: text;
+	info: text;
+	source:name;
+	posturl:text;
+	imgurl:text;
+	category:name;	
+	date:text;
+}
+
+entity token {
 	key id: byte_array;
 	key name;
-	max_q: integer;
-	transferable: boolean;
+	key symbol:text;
+	mutable transferable: boolean;
 }
 
 
 entity balance {
-	key user, resource;
-	mutable amount: integer;
+	key user, token;
+	mutable amount: decimal;
 }
 
-entity resource_transactions {
+
+entity item {
+	key id:name;
+	max_inst:integer;
+}
+
+entity item_meta {
+	key item;
+	gen;
+	gender;
+	socket;
+}
+
+entity item_inst {
+	key item, id:integer;
+	miner:user;
+}
+
+entity inventory {
+	key user, item_inst;
+}
+
+entity sockets {
+	key user, item_inst;
+	key socket;
+}
+
+
+
+entity server {
+	key id:integer;
+	key host:text;
+	key name;
+	port:integer;
+	mode:name;
+	owner:pubkey;
+}
+
+entity server_items {
+	key server, item_inst;
+}
+
+entity item_listing {
+	key id:byte_array;
+	key item_inst;
+	price:decimal;
+	seller:user;
+	
+}
+
+entity market_history {
+	key id: integer;
+	item_inst;
+	buyer:user;
+	seller:user;
+	price:decimal;
+	date:timestamp;
+}
+
+entity nft {
 	key id: byte_array;
-	resource;
+	key name;
+	desc:text;
+	icon: text;
+	created: timestamp;
+	max: integer;
+}
+
+entity nft_obj {
+	key id: byte_array;
+	nft;
+	mutable level:integer = 1;
+}
+
+entity nft_ownership {
+	key user, nft_obj;
+}
+
+entity nft_transactions {
+	key id: byte_array;
 	sender: user;
 	receiver: user;
-	amount: integer;
+	nft_obj;
+	date: timestamp;
+}
+
+entity market_bids {
+	key id: integer;
+	bidder: user;
+	mutable amount:decimal;
+	mutable time: timestamp;
+	item: nft_obj_listing;
+}
+
+entity nft_obj_listing {
+	key id: integer;
+	key item:nft_obj;
+	price: decimal;
+	expire: timestamp;
+	promoted: boolean;
+	mutable listing_state = listing_state.value(0);
+}
+
+
+
+
+
+
+entity token_transactions {
+	key id: byte_array;
+	token;
+	sender: user;
+	receiver: user;
+	amount: decimal;
 	timestamp;
 	
 }
 
-entity resource_sales {
+entity token_sales {
 	key id: byte_array;
 	buyer: user;
-	resource;
-	amount: integer;
+	token;
+	amount: decimal;
 	payment_method: text;
 	payment_amount: decimal;
 	payment_txid: text;
 	timestamp;
 }
 
-entity resource_pairs {
+entity token_pairs {
 	key id: integer;
 	key name: text;
-	main: resource;
-	second: resource;
+	main: token;
+	second: token;
+	state:boolean = true;
 }
 
 entity ex_order {
 	key id: integer;
-	resource_pairs;
-	bid: boolean;
-	issuer: user;
-	amount: integer;
-	price: integer;
-	mutable filled: integer;
+	order_type;
+	token_pairs;
+	maker: user;
+	amount: decimal;
+	price: decimal;
 	timestamp;
 }
 
-entity miners {
-	key id: byte_array;
-	key name;
-	mutable cicle: integer = 24;
-	mutable lvl: integer = 1;
-	mutable capacity: integer = 60;
-	resource;
+entity ex_live {
+	id: integer;
+	ex_order;
+	mutable filled: decimal;
+	mutable canceled:boolean = false;
+}
+
+entity ex_live_transactions {
+	key id: integer;
+	buy_order: ex_live;
+	sell_order: ex_live;
+	token_pairs;
+	amount:decimal;
+	date: timestamp;
 }
 
 
-entity abilities {
-	key id: byte_array;
-	key name;
-	jump: integer;
-	climb: integer;
-	fire: integer;
-	ice: integer;
-	shadow: integer;
-}
 
-entity items {
-	key id:byte_array;
-	key name;
-	abilities;
-}
+
+
+
+
 
