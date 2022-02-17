@@ -67,15 +67,15 @@ entity balance {
 
 // example of item -- replace with your own
 entity item {
-	key id:name;
+	key id:byte_array;
 	max_inst:integer;
+	uri: text;
 }
 
 // example of item instance -- replace with your own
 entity item_inst {
 	key item, id:integer;
 	minter:user;
-	uri: text;
 }
 
 // simple inventory of inst items.

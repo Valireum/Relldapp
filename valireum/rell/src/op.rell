@@ -13,102 +13,102 @@ operation user_create(p: pubkey, n: name, nonce: integer) {
 	val id = (p, n).hash();
 	require((m.user@*{.name == n}).size() < 1, "User Already Exist");
 	val u = create m.user(id = id, name = n, pubkey = p);
-	create m.user_stats(user = u);
+	//create m.user_stats(user = u);
 	f.f_create_user_balance(u);
 }
 
 // USER Stats update
 
-operation stats_title(p: pubkey, new_title: text, nonce: integer){
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	update m.user_stats@{.user.pubkey == p}(.title = new_title);
-}
+//operation stats_title(p: pubkey, new_title: text, nonce: integer){
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	update m.user_stats@{.user.pubkey == p}(.title = new_title);
+//}
 
-operation stats_xp(n:name, exp:integer, nonce: integer){
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	f.f_handle_exp(exp, n);
-	
-}
+//operation stats_xp(n:name, exp:integer, nonce: integer){
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	f.f_handle_exp(exp, n);
+//	
+//}
 
 // NEWS
 
-operation add_news(p: pubkey, title:text, info:text, source:name, posturl:text, imgurl:text, category:name, date:text) {
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	val uId = (m.news@*{}).size();
-	create m.news(id = uId, title = title, info = info, source = source, posturl = posturl, imgurl = imgurl, category = category, date = date);
-}
+//operation add_news(p: pubkey, title:text, info:text, source:name, posturl:text, imgurl:text, category:name, date:text) {
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	val uId = (m.news@*{}).size();
+//	create m.news(id = uId, title = title, info = info, source = source, posturl = posturl, imgurl = imgurl, category = category, date = date);
+//}
 
 
 // token
 operation token_create(n: name, s: text, t: boolean, drop_amount: integer){
 	//require(is_signer(c.config.store), "Unauthorized transaction");
 	val Id = (n, s, t).hash();
-	create m.token(id = Id, name = n, symbol = s, transferable = t);
+	create m.token(id = Id, name = n, symbol = s);
 	f.f_airdrop(drop_amount, s);
 	
 }
 
-operation token_update(s:text, t:boolean) {
-	update m.token@{.symbol == s}(.transferable = t);
-}
+//operation token_update(s:text, t:boolean) {
+//	update m.token@{.symbol == s}(.transferable = t);
+//}
 
 // Items
 
-operation item_create(id:name, max_inst:integer, gen:text, gender:text, socket:text) {
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	//val Id = (m.item@*{}).size();
-	
-	val newItem = create m.item(id = id, max_inst = max_inst);
-	create m.item_meta(item = newItem, gen = m.gen.value(gen), gender = m.gender.value(gender), socket = m.socket.value(socket));
-	
-}
+//operation item_create(id:name, max_inst:integer, gen:text, gender:text, socket:text) {
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	//val Id = (m.item@*{}).size();
+//	
+//	create m.item(id = id, max_inst = max_inst);
+//	//create m.item_meta(item = newItem, gen = m.gen.value(gen), gender = m.gender.value(gender), socket = m.socket.value(socket));
+//	
+//}
 
 // item_isnt mining
-operation item_mint (p:pubkey, server_id:integer, itemid:name, nonce:integer){
-	require(is_signer(p), "Unauthorized transaction");
-	val getUser = m.user@{.pubkey == p};
-	val getItem = m.item@{.id == itemid};
-	val getServer = m.server@{.id == server_id};
-	val Id = (m.item_inst@*{.item == getItem}).size();
-	require(getItem.max_inst == 0 or Id < getItem.max_inst, "Max Item_inst reached");
+//operation item_mint (p:pubkey, server_id:integer, itemid:name, nonce:integer){
+//	require(is_signer(p), "Unauthorized transaction");
+//	val getUser = m.user@{.pubkey == p};
+//	val getItem = m.item@{.id == itemid};
+//	//val getServer = m.server@{.id == server_id};
+//	val Id = (m.item_inst@*{.item == getItem}).size();
+//	require(getItem.max_inst == 0 or Id < getItem.max_inst, "Max Item_inst reached");
 	
-	val newItem = create m.item_inst(id = Id, item = getItem, miner = getUser);
+	//val newItem = create m.item_inst(id = Id, item = getItem, miner = getUser);
 	
-	create m.server_items(getServer, newItem);
-}
+	//create m.server_items(getServer, newItem);
+//}
 
 // Loot item, called from server
 
-operation item_loot (server_id:integer, itemid:name, idx:integer, receiver:name, nonce:integer){
-	val GetUser = m.user@{.name == receiver};
-	val GetItem = m.server_items@{.server.id == server_id and .item_inst.id == idx and .item_inst.item.id == itemid};
-	create m.inventory(GetUser, GetItem.item_inst);
-	delete GetItem;
-	
-}
+//operation item_loot (server_id:integer, itemid:name, idx:integer, receiver:name, nonce:integer){
+//	val GetUser = m.user@{.name == receiver};
+//	val GetItem = m.server_items@{.server.id == server_id and .item_inst.id == idx and .item_inst.item.id == itemid};
+//	create m.inventory(GetUser, GetItem.item_inst);
+//	delete GetItem;
+//	
+//}
 
 
 
 // server
 
-operation server_create(p:pubkey, host_ip:text, name, port_ip:integer, mode:name){
-	require(is_signer(p), "Unauthorized transaction");
-	val GetUser = m.user@{.pubkey == p};
-	val Id = (m.server@*{}).size();
-	create m.server(id = Id, host = host_ip, name = name, port = port_ip, mode = mode, owner = p);
-	
-}
+//operation server_create(p:pubkey, host_ip:text, name, port_ip:integer, mode:name){
+//	require(is_signer(p), "Unauthorized transaction");
+//	val GetUser = m.user@{.pubkey == p};
+//	val Id = (m.server@*{}).size();
+//	create m.server(id = Id, host = host_ip, name = name, port = port_ip, mode = mode, owner = p);
+//	
+//}
 
-// marketplace
+// marketplace to redo
 
-operation listing_add (p:pubkey, itemid:name, idx:integer, price:decimal, nonce:integer){
-	require(is_signer(p), "Unauthorized transaction");
-	val GetUser = m.user@{.pubkey == p};
-	val GetItem = m.inventory@{.item_inst.id == idx and .item_inst.item.id == itemid};
-	val Id = (itemid, idx).hash();
-	create m.item_listing(id = Id, GetItem.item_inst, price, GetUser);
-	delete GetItem;
-}
+//operation listing_add (p:pubkey, itemid:name, idx:integer, price:decimal, nonce:integer){
+//	require(is_signer(p), "Unauthorized transaction");
+//	val GetUser = m.user@{.pubkey == p};
+//	val GetItem = m.inventory@{.item_inst.id == idx and .item_inst.item.id == itemid};
+//	val Id = (itemid, idx).hash();
+//	create m.item_listing(id = Id, GetItem.item_inst, price, GetUser);
+//	delete GetItem;
+//}
 
 operation listing_buy (p:pubkey, listing_id:list<byte_array>, nonce:integer){
 	require(is_signer(p), "Unauthorized transaction");
@@ -145,62 +145,62 @@ operation listing_remove(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
 
 // Sockets transfer
 
-operation inventory_to_socket (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
-	require(is_signer(p), "Unauthorized transaction");
-	val GetUser = m.user@{.pubkey == p};
-	for (item in items) {
-		val GetItem = m.inventory@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
-		create m.sockets(GetUser, GetItem.item_inst, m.socket.value(item.socket));
-		delete GetItem;
-		
-	}
-}
+//operation inventory_to_socket (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
+//	require(is_signer(p), "Unauthorized transaction");
+//	val GetUser = m.user@{.pubkey == p};
+//	for (item in items) {
+//		val GetItem = m.inventory@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
+//		create m.sockets(GetUser, GetItem.item_inst, m.socket.value(item.socket));
+//		delete GetItem;
+//		
+//	}
+//}
 
 // Sockets transfer
 
-operation socket_to_inventory (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
-	require(is_signer(p), "Unauthorized transaction");
-	val GetUser = m.user@{.pubkey == p};
-	for (item in items) {
-		val GetItem = m.sockets@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
-		create m.inventory(GetUser, GetItem.item_inst);
-		delete GetItem;
-		
-	}
-}
+//operation socket_to_inventory (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
+//	require(is_signer(p), "Unauthorized transaction");
+//	val GetUser = m.user@{.pubkey == p};
+//	for (item in items) {
+//		val GetItem = m.sockets@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
+//		create m.inventory(GetUser, GetItem.item_inst);
+//		delete GetItem;
+//		
+//	}
+//}
 
 
 
-operation create_nft(n:name, desc:text, type: integer, iconipfs: text, max: integer){
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	val timestamp = op_context.last_block_time;
-	val Id = (n, type, iconipfs, max, timestamp).hash();
-	create m.nft(id = Id, name = n, desc = desc, icon = iconipfs, created = timestamp, max = max);
-}
+//operation create_nft(n:name, desc:text, type: integer, iconipfs: text, max: integer){
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	val timestamp = op_context.last_block_time;
+//	val Id = (n, type, iconipfs, max, timestamp).hash();
+//	create m.nft(id = Id, name = n, desc = desc, icon = iconipfs, created = timestamp, max = max);
+//}
 
-operation mint_nft_obj (nftId:byte_array, owner: pubkey){
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	val target_nft = m.nft@{.id == nftId};
-	val minter = m.user@{.pubkey == owner};
-	val uId = (m.nft_obj@*{target_nft}).size();
-	require(uId < target_nft.max, "Maximum amount of objects already created");
-	val Id = (target_nft.id, uId).hash();
-	val obj = create m.nft_obj(id = Id, nft = target_nft);
-	create m.nft_ownership(minter, obj);
-}
+//operation mint_nft_obj (nftId:byte_array, owner: pubkey){
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	val target_nft = m.nft@{.id == nftId};
+//	val minter = m.user@{.pubkey == owner};
+//	val uId = (m.nft_obj@*{target_nft}).size();
+//	require(uId < target_nft.max, "Maximum amount of objects already created");
+//	val Id = (target_nft.id, uId).hash();
+//	val obj = create m.nft_obj(id = Id, nft = target_nft);
+//	create m.nft_ownership(minter, obj);
+//}
 
 
 
 //Store
-operation add_token_topubkey (to: pubkey, token_symbol: text, add_amount: decimal, payment_method: text, payment_amount: decimal, payment_txid: text) {
-	require(is_signer(c.config.store), "Unauthorized transaction");
-	val buyer = m.user@{.pubkey == to};
-	val stoken = m.token@{.symbol == token_symbol};
-	update m.balance@{.user == buyer, .token == stoken}(.amount += add_amount);
-	val timestamp = op_context.last_block_time;
-	val id = (buyer, add_amount, timestamp, stoken, payment_txid).hash();
-	create m.token_sales(id, buyer, stoken, amount = add_amount, payment_method, payment_amount, payment_txid, timestamp);
-}
+//operation add_token_topubkey (to: pubkey, token_symbol: text, add_amount: decimal, payment_method: text, payment_amount: decimal, payment_txid: text) {
+//	require(is_signer(c.config.store), "Unauthorized transaction");
+//	val buyer = m.user@{.pubkey == to};
+//	val stoken = m.token@{.symbol == token_symbol};
+//	update m.balance@{.user == buyer, .token == stoken}(.amount += add_amount);
+//	val timestamp = op_context.last_block_time;
+//	val id = (buyer, add_amount, timestamp, stoken, payment_txid).hash();
+//	create m.token_sales(id, buyer, stoken, amount = add_amount, payment_method, payment_amount, payment_txid, timestamp);
+//}
 
 // User operations
 
@@ -208,7 +208,7 @@ operation add_token_topubkey (to: pubkey, token_symbol: text, add_amount: decima
 operation token_transfer(from: pubkey, to: pubkey, token_symbol: text, t_amount: decimal, nonce: integer/*bug work around*/) {
 	require(is_signer(from), "Unauthorized transaction");
 	val stoken = m.token@{.symbol == token_symbol};
-	require( stoken.transferable, "Asset not transferable" );
+	//require( stoken.transferable, "Asset not transferable" );
 	require( t_amount > 0, "Amount is too low" );
 	val u_from = m.user@{.pubkey == from};
 	val u_to = m.user@{.pubkey == to};
@@ -225,118 +225,120 @@ operation token_transfer(from: pubkey, to: pubkey, token_symbol: text, t_amount:
 
 // nft transfer
 
-operation nft_transfer (from: pubkey, to: pubkey, nftid: byte_array, nonce: integer/*bug work around*/){
-	require(is_signer(from), "Unauthorized transaction");
-	val sender = m.user@{.pubkey == from};
-	val receiver = m.user@{.pubkey == to};
-	val item = m.nft_obj@{.id == nftid};
-	val nftobj = m.nft_ownership@?{.user == sender and .nft_obj == item};
-	require_not_empty(nftobj, "NFT not found");
-
-	delete nftobj;
-	create m.nft_ownership(receiver, item);
-	val timestamp = op_context.last_block_time;
-	val Id = (from , to, nftobj, timestamp).hash();
-	create m.nft_transactions(id = Id, sender = sender, receiver = receiver, nft_obj = item, date = timestamp);
-	
-	
-}
+//operation nft_transfer (from: pubkey, to: pubkey, nftid: byte_array, nonce: integer/*bug work around*/){
+//	require(is_signer(from), "Unauthorized transaction");
+//	val sender = m.user@{.pubkey == from};
+//	val receiver = m.user@{.pubkey == to};
+//	val item = m.nft_obj@{.id == nftid};
+//	val nftobj = m.nft_ownership@?{.user == sender and .nft_obj == item};
+//	require_not_empty(nftobj, "NFT not found");
+//
+//	delete nftobj;
+//	create m.nft_ownership(receiver, item);
+//	val timestamp = op_context.last_block_time;
+//	val Id = (from , to, nftobj, timestamp).hash();
+//	create m.nft_transactions(id = Id, sender = sender, receiver = receiver, nft_obj = item, date = timestamp);
+//	
+//	
+//}
 
 //exchange order
-operation exchange_order (type:integer, pair: text, maker:pubkey, amount:decimal, price:decimal){
-	require(is_signer(maker), "Unauthorized transaction");
-	require(amount > 0, "Amount too low");
-	val tokenpair = m.token_pairs@{.name == pair};
-	require(tokenpair.state, "This pair is disabled");
-	val user = m.user@{.pubkey == maker};
-	val mainbalance = m.balance@{.user == user, .token == tokenpair.main}(.amount);
-	val secondbalance = m.balance@{.user == user, .token == tokenpair.second}(.amount);
-	if (type == 0){
-		require(mainbalance >= amount*price, "Low Balance");
-		
-	} else {
-		require(secondbalance >= amount, "Low Balance");
-	}
-	val timestamp = op_context.last_block_time;
-	val Id = (m.ex_order@*{}).size();
-	val neworder = create m.ex_order(id = Id, order_type = m.order_type.value(type), token_pairs = tokenpair, maker = user, amount = amount, price = price, timestamp);
-	f.f_match_orders(neworder, timestamp);
-}
+//operation exchange_order (type:integer, pair: text, maker:pubkey, amount:decimal, price:decimal){
+//	require(is_signer(maker), "Unauthorized transaction");
+//	require(amount > 0, "Amount too low");
+//	val tokenpair = m.token_pairs@{.name == pair};
+//	require(tokenpair.state, "This pair is disabled");
+//	val user = m.user@{.pubkey == maker};
+//	val mainbalance = m.balance@{.user == user, .token == tokenpair.main}(.amount);
+//	val secondbalance = m.balance@{.user == user, .token == tokenpair.second}(.amount);
+//	if (type == 0){
+//		require(mainbalance >= amount*price, "Low Balance");
+//		
+//	} else {
+//		require(secondbalance >= amount, "Low Balance");
+//	}
+//	val timestamp = op_context.last_block_time;
+//	val Id = (m.ex_order@*{}).size();
+//	val neworder = create m.ex_order(id = Id, order_type = m.order_type.value(type), token_pairs = tokenpair, maker = user, amount = amount, price = price, timestamp);
+//	f.f_match_orders(neworder, timestamp);
+//}
+//
+//
+////exchange order cancel
+//
+//operation cancel_ex_liveorder(order_id: integer) {
+//	val liveorder = m.ex_live@{.id == order_id};
+//	require(is_signer(liveorder.ex_order.maker.pubkey), "Unauthorized transaction");
+//	require(liveorder.ex_order.amount < liveorder.filled, "Order already filled");
+//	val refund_amount = liveorder.ex_order.amount - liveorder.filled;
+//	update m.ex_live@{.id == liveorder.id}(.canceled = true);
+//	val Id = (m.ex_live_transactions@*{}).size();
+//	val timestamp = op_context.last_block_time;
+//	if (liveorder.ex_order.order_type == m.order_type.value(0)) {
+//		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.main}(.amount += refund_amount*liveorder.ex_order.price);
+//		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount*liveorder.ex_order.price, date = timestamp);
+//	}else{
+//		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.second}(.amount += refund_amount);
+//		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount, date = timestamp);
+//		
+//	}
+//}
 
+// item listing to redo
 
-//exchange order cancel
+//operation create_nft_listing(itemid:byte_array, price:decimal, expire:timestamp, promoted:boolean) {
+//	val nft_item = m.item_inst@{.id == itemid};
+//	val owner = m.nft_ownership@?{nft_item}.user;
+//	require(owner, "Item has no owner");
+//	require(is_signer(owner.pubkey), "Unauthorized transaction");
+//	val Id = (m.nft_obj_listing@*{}).size();
+//	create m.nft_obj_listing(id = Id, item = nft_item, price = price, expire = expire, promoted = promoted);
+//}
 
-operation cancel_ex_liveorder(order_id: integer) {
-	val liveorder = m.ex_live@{.id == order_id};
-	require(is_signer(liveorder.ex_order.maker.pubkey), "Unauthorized transaction");
-	require(liveorder.ex_order.amount < liveorder.filled, "Order already filled");
-	val refund_amount = liveorder.ex_order.amount - liveorder.filled;
-	update m.ex_live@{.id == liveorder.id}(.canceled = true);
-	val Id = (m.ex_live_transactions@*{}).size();
-	val timestamp = op_context.last_block_time;
-	if (liveorder.ex_order.order_type == m.order_type.value(0)) {
-		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.main}(.amount += refund_amount*liveorder.ex_order.price);
-		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount*liveorder.ex_order.price, date = timestamp);
-	}else{
-		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.second}(.amount += refund_amount);
-		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount, date = timestamp);
-		
-	}
-}
+//redo
 
-// nft obj listing
+//operation deleteListing(listing_id: integer) {
+//	val itemtodelete = m.nft_obj_listing@{.id == listing_id};
+//	val owner = m.nft_ownership@{itemtodelete.item}.user;
+//	require(is_signer(owner.pubkey), "Unauthorized transaction");
+//	val activebids = m.market_bids@?{.item.id == listing_id};
+//	require(activebids == null, "You can't delete a listing with active bids");
+//	
+//	delete itemtodelete;
+//}
 
-operation create_nft_listing(nft_objid:byte_array, price:decimal, expire:timestamp, promoted:boolean) {
-	val nft_item = m.nft_obj@{.id == nft_objid};
-	val owner = m.nft_ownership@?{nft_item}.user;
-	require(owner, "Item has no owner");
-	require(is_signer(owner.pubkey), "Unauthorized transaction");
-	val Id = (m.nft_obj_listing@*{}).size();
-	create m.nft_obj_listing(id = Id, item = nft_item, price = price, expire = expire, promoted = promoted);
-}
-
-operation deleteListing(listing_id: integer) {
-	val itemtodelete = m.nft_obj_listing@{.id == listing_id};
-	val owner = m.nft_ownership@{itemtodelete.item}.user;
-	require(is_signer(owner.pubkey), "Unauthorized transaction");
-	val activebids = m.market_bids@?{.item.id == listing_id};
-	require(activebids == null, "You can't delete a listing with active bids");
-	
-	delete itemtodelete;
-}
-
-// user create bid
-operation create_market_bids(bidder:pubkey, bid:decimal, listing_id: integer) {
-	require(is_signer(bidder), "Unauthorized transaction");
-	val buser = m.user@{.pubkey == bidder};
-	val vlmbalance = m.balance@{.user == buser, .token.symbol == 'VLM'}.amount;
-	val timestamp = op_context.last_block_time;
-	//check if i have active bid on this item
-	val activebid = m.market_bids@?{.bidder == buser , .item.id == listing_id};
-	if (activebid != null) {
-		// update
-		require(bid > activebid.amount, "New bid is lower than the active bid");
-		val reqBalance = bid-activebid.amount;
-		require(vlmbalance >= reqBalance, "Balance too low");
-		update m.balance@{.user == buser, .token.symbol == 'VLM'}(.amount -= reqBalance);
-		update m.market_bids@{.id == activebid.id}(.amount += reqBalance, .time = timestamp);
-	} else {
-		//create new
-		val item = m.nft_obj_listing@{.id == listing_id};
-		require(vlmbalance >= bid, "Balance too low");
-		val Id = (m.market_bids@*{item}).size();
-		update m.balance@{.user == buser, .token.symbol == 'VLM'}(.amount -= bid);
-		create m.market_bids(id = Id, buser, amount = bid, item = item, time = timestamp);
-	}
-		
-}
+// user create bid redo
+//operation create_market_bids(bidder:pubkey, bid:decimal, listing_id: integer) {
+//	require(is_signer(bidder), "Unauthorized transaction");
+//	val buser = m.user@{.pubkey == bidder};
+//	val vlmbalance = m.balance@{.user == buser, .token.symbol == 'VLM'}.amount;
+//	val timestamp = op_context.last_block_time;
+//	//check if i have active bid on this item
+//	val activebid = m.market_bids@?{.bidder == buser , .item.id == listing_id};
+//	if (activebid != null) {
+//		// update
+//		require(bid > activebid.amount, "New bid is lower than the active bid");
+//		val reqBalance = bid-activebid.amount;
+//		require(vlmbalance >= reqBalance, "Balance too low");
+//		update m.balance@{.user == buser, .token.symbol == 'VLM'}(.amount -= reqBalance);
+//		update m.market_bids@{.id == activebid.id}(.amount += reqBalance, .time = timestamp);
+//	} else {
+//		//create new
+//		val item = m.nft_obj_listing@{.id == listing_id};
+//		require(vlmbalance >= bid, "Balance too low");
+//		val Id = (m.market_bids@*{item}).size();
+//		update m.balance@{.user == buser, .token.symbol == 'VLM'}(.amount -= bid);
+//		create m.market_bids(id = Id, buser, amount = bid, item = item, time = timestamp);
+//	}
+//		
+//}
 
 
 // server update state
-operation updatelisting_state(listing_id: integer, newstate:integer) {
-	//require(is_signer(c.config.store), "Unauthorized transaction");
-	update m.nft_obj_listing@{.id == listing_id}(.listing_state = m.listing_state.value(newstate));
-}
+//operation updatelisting_state(listing_id: integer, newstate:integer) {
+//	//require(is_signer(c.config.store), "Unauthorized transaction");
+//	update m.nft_obj_listing@{.id == listing_id}(.listing_state = m.listing_state.value(newstate));
+//}
 
 //operation expired_nft_obj_listing(listing_id: integer, time:timestamp) {
 //	//require(is_signer(c.config.store), "Unauthorized transaction");
