@@ -25,157 +25,63 @@ query get_tokens_ids(): list<(id:byte_array)>{
 	return m.token@*{}(id = .id);
 } 
 
-//query getAlltoken_pairs(): list<(name:name)>{
-//	return m.token_pairs@*{}(name = .name);
-//} 
+query get_nfts_ids(): list<(id:byte_array)>{
+	return m.nft@*{}(id = .id);
+} 
 
  
 // get user
 
 
-query getuser_bypubkey(p:pubkey): (name:name){
+query get_user_name(p:pubkey): (name:name){
 	return m.user @{.pubkey == p}(name = .name);
 }
 
-query getuser_byname(n:name): (pubkey:pubkey){
+query get_user_pubkey(n:name): (pubkey:pubkey){
 	return m.user @{.name == n}(pubkey = .pubkey);
 }
-
-// get user stats
-//query getstats_byname(n:name){
-//	return m.user_stats@{.user.name == n}(level = .level, xp = .exp_points, sk = .skill_points);
-//}
-
-
-// get news
-
-//query getnews(): list<(id:integer, title:text, info:text, source:name, category:name, posturl:text, imgurl:text, date:text)> {
-//	return m.news@*{}(@sort_desc id = .id, title = .title, info = .info, source = .source, category = .category, posturl = .posturl, imgurl = .imgurl, date = .date) limit 2;
-//} 
-
-
 
 //user token balance
 
 
-query getusername_balance(u:name, token:text):(balance:decimal){
+query get_user_balance(u:name, token:text):(balance:decimal){
 	return m.balance@{.user.name == u, .token.symbol == token}(balance = .amount);
 }
 
 
-// get items
-
-//query getitems(): list<(id:name)>{
-//	return m.item@*{}(id = .id);
-//}
 // get inventory
 
-query getinventory(u:name): list<(itemid:byte_array, idx:integer)>{
+query get_inventory(u:name): list<(itemid:byte_array, idx:integer)>{
 	return m.inventory@*{.user.name == u}(itemid = .item_inst.item.id, idx = .item_inst.id);
 }
 
-// get sockets
-//query getsockets(u:name): list<(itemid:name, socket:m.socket)>{
-//	return m.sockets@*{.user.name == u}(itemid = .item_inst.item.id, socket = .socket);
-//}
-
-// get servers
-//query getservers():list<(id:integer, host:text, name:name, port:integer, mode:name)>{
-//	return m.server@*{}(id = .id, host = .host, name = .name, port = .port, mode = .mode);
-//}
 
 // get marketplace items
-query getitem_listing():list<(id:byte_array, item_id:byte_array, price:decimal, seller:name, idx:integer)>{
+query get_item_listing():list<(id:byte_array, item_id:byte_array, price:decimal, seller:name, idx:integer)>{
 	return m.item_listing@*{}(id = .id, item_id = .item_inst.item.id, price = .price, seller = .seller.name, idx = .item_inst.id);
 }
 
-// get market history
-query getmarket_history(u:name):list<(itemid:byte_array, nftid:integer, seller:name, buyer:name, price:decimal, date:integer)> {
-	return m.market_history@*{.buyer.name == u or .seller.name == u}(itemid = .item_inst.item.id, nftid = .item_inst.id, seller = .seller.name, buyer = .buyer.name, price = .price, date = .date);
+// get item market history
+query get_item_listing_history(u:name):list<(itemid:byte_array, nftid:integer, seller:name, buyer:name, price:decimal, date:integer)> {
+	return m.item_listing_history@*{.buyer.name == u or .seller.name == u}(itemid = .item_inst.item.id, nftid = .item_inst.id, seller = .seller.name, buyer = .buyer.name, price = .price, date = .date);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//user nfts
-//query getnfts_byuser(u:name): list<(nft:byte_array, uid:byte_array)>{
-//	return m.nft_ownership@*{.user.name == u}(nft = .nft_obj.nft.id, uid= .nft_obj.id);
-//} 
-//
-////pubkey nfts
-//query getnfts_bypubkey(p:pubkey): list<(nft:byte_array, uid:byte_array)>{
-//	return m.nft_ownership@*{.user.pubkey == p}(nft = .nft_obj.nft.id, uid= .nft_obj.id);
-//} 
+// get nft market history
+query get_nft_listing_history(u:name):list<(contract:text, id:byte_array, seller:name, buyer:name, price:decimal, date:integer)> {
+	return m.nft_listing_history@*{.buyer.name == u or .seller.name == u}(contract = .nft.contract.address, id = .nft.id, seller = .seller.name, buyer = .buyer.name, price = .price, date = .date);
+}
 
 
 
 // user token transactions
 query gettransactions_byuser(u:name): list<(id:byte_array, token:text, sender:name, receiver:name, date:timestamp)>{
-	return m.token_transactions@*{.receiver.name == u or .sender.name == u}(id = .id, token = .token.symbol, sender = .sender.name, receiver = .receiver.name, date = .timestamp);
+	return m.token_transactions@*{.receiver.name == u or .sender.name == u}(id = .id, token = .token.symbol, sender = .sender.name, receiver = .receiver.name, date = .date);
 } 
 
 // pubkey token transactions
 query gettransactions_pubkey(p:pubkey): list<(id:byte_array, token:text, sender:pubkey, receiver:pubkey, date:timestamp)>{
-	return m.token_transactions@*{.receiver.pubkey == p or .sender.pubkey == p}(id = .id, token = .token.symbol, sender = .sender.pubkey, receiver = .receiver.pubkey, date = .timestamp);
+	return m.token_transactions@*{.receiver.pubkey == p or .sender.pubkey == p}(id = .id, token = .token.symbol, sender = .sender.pubkey, receiver = .receiver.pubkey, date = .date);
 } 
-
-// get token pairs
-//query gettoken_pairs(): list<(id: integer, name:name, main:text, second:text, state:boolean)> {
-//	return m.token_pairs@*{}(id = .id, name = .name, main = .main.symbol, second = .second.symbol, state = .state);
-//}
-
-//get exchange orders by pubkey
-
-//query getexlive_orders(maker:pubkey): list<(id:integer, exorder_id:integer, amount:decimal, filled:decimal)> {
-//	require(is_signer(maker), "Unauthorized transaction");
-//	return m.ex_live@*{.ex_order.maker.pubkey == maker, .canceled == false}(id = .id, exorder_id = .ex_order.id, amount =.ex_order.amount, filled = .filled);
-//}
-//
-////get nft_transactions
-//
-//query getnft_transactions(p:pubkey) {
-//	return m.nft_transactions@*{.sender.pubkey == p or .receiver.pubkey == p}(id = .id, sender = .sender, receiver = .receiver, item = .nft_obj.id);
-//}
-
-// get item listing by item id
-//query getnft_listing(itemid:byte_array) {
-//	return m.nft_obj_listing@{.item.id == itemid}(id = .id, price = .price);
-//}
-//
-//// get item listing by name(list)
-//query getnft_name_listing(itemname:name) {
-//	return m.nft_obj_listing@*{.item.nft.name == itemname}(id = .id, price = .price);
-//
-//}
-
-
-// get nft listing bids
-//
-//query getnft_listing_bids(listingId:integer) {
-//	return m.market_bids@{.item.id == listingId}(id = .id, user = .bidder.pubkey, amount = .amount, time = .time);
-//}
-
-// get bids by user
-
-query getbids_byuser(p:pubkey) {
-	return m.market_bids@{.bidder.pubkey == p}(id = .id, item = .item, amount = .amount, time = .time);
-}
-
 
 
 

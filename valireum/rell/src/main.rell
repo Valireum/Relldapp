@@ -68,7 +68,8 @@ entity contract {
 }
 
 entity nft {
-	key contract, id:integer;
+	key id: byte_array;
+	key contract, idx:integer;
 	uri:text;
 }
 
