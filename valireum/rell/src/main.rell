@@ -11,6 +11,7 @@ enum listing_state {
 	canceled
 }
 
+
 enum sale_offer {
 	bid,
 	instant,
@@ -43,7 +44,7 @@ entity balance {
 entity item {
 	key id:byte_array;
 	max_inst:integer;
-	uri: text;
+	DTID: text;
 	created: timestamp;
 }
 
