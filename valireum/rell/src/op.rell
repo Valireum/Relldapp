@@ -17,26 +17,6 @@ operation user_create(p: pubkey, n: name, nonce: integer) {
 	f.f_create_user_balance(u);
 }
 
-// USER Stats update
-
-//operation stats_title(p: pubkey, new_title: text, nonce: integer){
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	update m.user_stats@{.user.pubkey == p}(.title = new_title);
-//}
-
-//operation stats_xp(n:name, exp:integer, nonce: integer){
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	f.f_handle_exp(exp, n);
-//	
-//}
-
-// NEWS
-
-//operation add_news(p: pubkey, title:text, info:text, source:name, posturl:text, imgurl:text, category:name, date:text) {
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	val uId = (m.news@*{}).size();
-//	create m.news(id = uId, title = title, info = info, source = source, posturl = posturl, imgurl = imgurl, category = category, date = date);
-//}
 
 
 // token
@@ -48,58 +28,12 @@ operation token_create(n: name, s: text, t: boolean, drop_amount: integer){
 	
 }
 
-//operation token_update(s:text, t:boolean) {
-//	update m.token@{.symbol == s}(.transferable = t);
-//}
-
-// Items
-
-//operation item_create(id:name, max_inst:integer, gen:text, gender:text, socket:text) {
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	//val Id = (m.item@*{}).size();
-//	
-//	create m.item(id = id, max_inst = max_inst);
-//	//create m.item_meta(item = newItem, gen = m.gen.value(gen), gender = m.gender.value(gender), socket = m.socket.value(socket));
-//	
-//}
-
-// item_isnt mining
-//operation item_mint (p:pubkey, server_id:integer, itemid:name, nonce:integer){
-//	require(is_signer(p), "Unauthorized transaction");
-//	val getUser = m.user@{.pubkey == p};
-//	val getItem = m.item@{.id == itemid};
-//	//val getServer = m.server@{.id == server_id};
-//	val Id = (m.item_inst@*{.item == getItem}).size();
-//	require(getItem.max_inst == 0 or Id < getItem.max_inst, "Max Item_inst reached");
-	
-	//val newItem = create m.item_inst(id = Id, item = getItem, miner = getUser);
-	
-	//create m.server_items(getServer, newItem);
-//}
-
-// Loot item, called from server
-
-//operation item_loot (server_id:integer, itemid:name, idx:integer, receiver:name, nonce:integer){
-//	val GetUser = m.user@{.name == receiver};
-//	val GetItem = m.server_items@{.server.id == server_id and .item_inst.id == idx and .item_inst.item.id == itemid};
-//	create m.inventory(GetUser, GetItem.item_inst);
-//	delete GetItem;
-//	
-//}
 
 
 
-// server
 
-//operation server_create(p:pubkey, host_ip:text, name, port_ip:integer, mode:name){
-//	require(is_signer(p), "Unauthorized transaction");
-//	val GetUser = m.user@{.pubkey == p};
-//	val Id = (m.server@*{}).size();
-//	create m.server(id = Id, host = host_ip, name = name, port = port_ip, mode = mode, owner = p);
-//	
-//}
 
-// marketplace to redo
+
 
 //operation listing_add (p:pubkey, itemid:name, idx:integer, price:decimal, nonce:integer){
 //	require(is_signer(p), "Unauthorized transaction");
@@ -143,31 +77,6 @@ operation listing_remove(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
 
 
 
-// Sockets transfer
-
-//operation inventory_to_socket (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
-//	require(is_signer(p), "Unauthorized transaction");
-//	val GetUser = m.user@{.pubkey == p};
-//	for (item in items) {
-//		val GetItem = m.inventory@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
-//		create m.sockets(GetUser, GetItem.item_inst, m.socket.value(item.socket));
-//		delete GetItem;
-//		
-//	}
-//}
-
-// Sockets transfer
-
-//operation socket_to_inventory (p:pubkey, items:list<(itemid:name, idx:integer, socket:text)>, nonce:integer){
-//	require(is_signer(p), "Unauthorized transaction");
-//	val GetUser = m.user@{.pubkey == p};
-//	for (item in items) {
-//		val GetItem = m.sockets@{.item_inst.id == item.idx and .item_inst.item.id == item.itemid};
-//		create m.inventory(GetUser, GetItem.item_inst);
-//		delete GetItem;
-//		
-//	}
-//}
 
 
 
@@ -178,16 +87,7 @@ operation listing_remove(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
 //	create m.nft(id = Id, name = n, desc = desc, icon = iconipfs, created = timestamp, max = max);
 //}
 
-//operation mint_nft_obj (nftId:byte_array, owner: pubkey){
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	val target_nft = m.nft@{.id == nftId};
-//	val minter = m.user@{.pubkey == owner};
-//	val uId = (m.nft_obj@*{target_nft}).size();
-//	require(uId < target_nft.max, "Maximum amount of objects already created");
-//	val Id = (target_nft.id, uId).hash();
-//	val obj = create m.nft_obj(id = Id, nft = target_nft);
-//	create m.nft_ownership(minter, obj);
-//}
+
 
 
 
@@ -242,47 +142,7 @@ operation token_transfer(from: pubkey, to: pubkey, token_symbol: text, t_amount:
 //	
 //}
 
-//exchange order
-//operation exchange_order (type:integer, pair: text, maker:pubkey, amount:decimal, price:decimal){
-//	require(is_signer(maker), "Unauthorized transaction");
-//	require(amount > 0, "Amount too low");
-//	val tokenpair = m.token_pairs@{.name == pair};
-//	require(tokenpair.state, "This pair is disabled");
-//	val user = m.user@{.pubkey == maker};
-//	val mainbalance = m.balance@{.user == user, .token == tokenpair.main}(.amount);
-//	val secondbalance = m.balance@{.user == user, .token == tokenpair.second}(.amount);
-//	if (type == 0){
-//		require(mainbalance >= amount*price, "Low Balance");
-//		
-//	} else {
-//		require(secondbalance >= amount, "Low Balance");
-//	}
-//	val timestamp = op_context.last_block_time;
-//	val Id = (m.ex_order@*{}).size();
-//	val neworder = create m.ex_order(id = Id, order_type = m.order_type.value(type), token_pairs = tokenpair, maker = user, amount = amount, price = price, timestamp);
-//	f.f_match_orders(neworder, timestamp);
-//}
-//
-//
-////exchange order cancel
-//
-//operation cancel_ex_liveorder(order_id: integer) {
-//	val liveorder = m.ex_live@{.id == order_id};
-//	require(is_signer(liveorder.ex_order.maker.pubkey), "Unauthorized transaction");
-//	require(liveorder.ex_order.amount < liveorder.filled, "Order already filled");
-//	val refund_amount = liveorder.ex_order.amount - liveorder.filled;
-//	update m.ex_live@{.id == liveorder.id}(.canceled = true);
-//	val Id = (m.ex_live_transactions@*{}).size();
-//	val timestamp = op_context.last_block_time;
-//	if (liveorder.ex_order.order_type == m.order_type.value(0)) {
-//		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.main}(.amount += refund_amount*liveorder.ex_order.price);
-//		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount*liveorder.ex_order.price, date = timestamp);
-//	}else{
-//		update m.balance@{.user.pubkey == liveorder.ex_order.maker.pubkey, .token == liveorder.ex_order.token_pairs.second}(.amount += refund_amount);
-//		create m.ex_live_transactions(id = Id, buy_order = liveorder, sell_order = liveorder, token_pairs = liveorder.ex_order.token_pairs, amount = refund_amount, date = timestamp);
-//		
-//	}
-//}
+
 
 // item listing to redo
 
