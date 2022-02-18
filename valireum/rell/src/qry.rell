@@ -25,10 +25,6 @@ query get_tokens_ids(): list<(id:byte_array)>{
 	return m.token@*{}(id = .id);
 } 
 
-query get_nfts_ids(): list<(id:byte_array)>{
-	return m.nft@*{}(id = .id);
-} 
-
  
 // get user
 
@@ -65,12 +61,6 @@ query get_item_listing():list<(id:byte_array, item_id:byte_array, price:decimal,
 query get_item_listing_history(u:name):list<(itemid:byte_array, nftid:integer, seller:name, buyer:name, price:decimal, date:integer)> {
 	return m.item_listing_history@*{.buyer.name == u or .seller.name == u}(itemid = .item_inst.item.id, nftid = .item_inst.id, seller = .seller.name, buyer = .buyer.name, price = .price, date = .date);
 }
-
-// get nft market history
-query get_nft_listing_history(u:name):list<(contract:text, id:byte_array, seller:name, buyer:name, price:decimal, date:integer)> {
-	return m.nft_listing_history@*{.buyer.name == u or .seller.name == u}(contract = .nft.contract.address, id = .nft.id, seller = .seller.name, buyer = .buyer.name, price = .price, date = .date);
-}
-
 
 
 // user token transactions

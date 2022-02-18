@@ -29,22 +29,19 @@ operation token_create(n: name, s: text, t: boolean, drop_amount: integer){
 }
 
 
+// add item listing
+operation add_item_listing (p:pubkey, itemid:byte_array, idx:integer, price:decimal, offer:integer, expire:integer, nonce:integer){
+	require(is_signer(p), "Unauthorized transaction");
+	val GetUser = m.user@{.pubkey == p};
+	val GetItem = m.inventory@{.item_inst.id == idx and .item_inst.item.id == itemid};
+	val Id = (itemid, idx).hash();
+	val created = op_context.last_block_time;
+	create m.item_listing(id = Id, GetItem.item_inst, price, GetUser, created, expire, m.sale_offer.value(offer));
+	delete GetItem;
+}
 
-
-
-
-
-
-//operation listing_add (p:pubkey, itemid:name, idx:integer, price:decimal, nonce:integer){
-//	require(is_signer(p), "Unauthorized transaction");
-//	val GetUser = m.user@{.pubkey == p};
-//	val GetItem = m.inventory@{.item_inst.id == idx and .item_inst.item.id == itemid};
-//	val Id = (itemid, idx).hash();
-//	create m.item_listing(id = Id, GetItem.item_inst, price, GetUser);
-//	delete GetItem;
-//}
-
-operation listing_buy (p:pubkey, listing_id:list<byte_array>, nonce:integer){
+// buy listing
+operation buy_listing (p:pubkey, listing_id:list<byte_array>, nonce:integer){
 	require(is_signer(p), "Unauthorized transaction");
 	val GetUser = m.user@{.pubkey == p};
 	for (id in listing_id) {
@@ -54,16 +51,16 @@ operation listing_buy (p:pubkey, listing_id:list<byte_array>, nonce:integer){
 		create m.inventory(GetUser, GetListing.item_inst);
 		update m.balance@{.user == GetUser}(.amount -= GetListing.price);
 		update m.balance@{.user == GetListing.seller}(.amount += GetListing.price);
-		val Id = (m.market_history@*{}).size();
+		val Id = (m.item_listing_history@*{}).size();
 		val timestamp = op_context.last_block_time;
-		create m.market_history(id = Id, GetListing.item_inst, buyer = GetUser, seller = GetListing.seller, GetListing.price, date = timestamp);
+		create m.item_listing_history(id = Id, GetListing.item_inst, buyer = GetUser, seller = GetListing.seller, GetListing.price, date = timestamp);
 		delete GetListing;
 	}
 	
 	
 }
 
-operation listing_remove(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
+operation cancel_listing(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
 	require(is_signer(p), "Unauthorized transaction");
 	val GetUser = m.user@{.pubkey == p};
 	for (id in listing_id) {
@@ -74,19 +71,6 @@ operation listing_remove(p:pubkey, listing_id:list<byte_array>, nonce:integer) {
 	}
 	
 }
-
-
-
-
-
-
-//operation create_nft(n:name, desc:text, type: integer, iconipfs: text, max: integer){
-//	//require(is_signer(c.config.store), "Unauthorized transaction");
-//	val timestamp = op_context.last_block_time;
-//	val Id = (n, type, iconipfs, max, timestamp).hash();
-//	create m.nft(id = Id, name = n, desc = desc, icon = iconipfs, created = timestamp, max = max);
-//}
-
 
 
 

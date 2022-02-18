@@ -60,20 +60,6 @@ entity inventory {
 	key user, item_inst;
 }
 
-// keep track of game NFTs contract and networks
-entity contract {
-	key address:text;
-	network: integer;
-	local: boolean;
-}
-
-entity nft {
-	key id: byte_array;
-	key contract, idx:integer;
-	uri:text;
-}
-
-
 // Item Listing
 entity item_listing {
 	key id:byte_array;
@@ -86,32 +72,11 @@ entity item_listing {
 	sale_offer;
 }
 
-// NFT Listing
-entity nft_listing {
-	key id:byte_array;
-	key nft;
-	price:decimal;
-	seller:user;
-	mutable listing_state = listing_state.value(0);
-	created: timestamp;
-	expire: timestamp;
-	sale_offer;
-}
 
 // item transactions history
 entity item_listing_history {
 	key id: integer;
 	item_inst;
-	buyer:user;
-	seller:user;
-	price:decimal;
-	date:timestamp;
-}
-
-// nft transactions history
-entity nft_listing_history {
-	key id: integer;
-	nft;
 	buyer:user;
 	seller:user;
 	price:decimal;
